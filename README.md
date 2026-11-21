@@ -1,9 +1,13 @@
-﻿# Generate and download a report from ASP.NET Core
+﻿# Generate and download Word and PDF reports in ASP.NET Core
 
 [![build](https://github.com/groupdocs-assembly/aspnet-core-report-download-net/actions/workflows/build.yml/badge.svg)](https://github.com/groupdocs-assembly/aspnet-core-report-download-net/actions/workflows/build.yml)
 [![NuGet](https://img.shields.io/nuget/v/GroupDocs.Assembly?label=GroupDocs.Assembly)](https://www.nuget.org/packages/GroupDocs.Assembly/)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+**To generate and download a Word or PDF report in ASP.NET Core, assemble the document into a
+`MemoryStream` and return it with `Results.File`.** Nothing touches the disk, and a PNG preview of
+the first page comes from the same engine.
 
 The request a web application actually gets is "give me this as a Word file". This sample is the
 small, complete version of that: an ASP.NET Core minimal API that takes JSON, fills a Word
@@ -127,6 +131,26 @@ data/Customers.json
 
 Every GroupDocs.Assembly call mirrors an example of the product's examples repository
 ([GroupDocs.Assembly-for-.NET](https://github.com/groupdocs-assembly/GroupDocs.Assembly-for-.NET)).
+
+## Common questions
+
+**How do I return a generated Word document from an ASP.NET Core endpoint?**
+Assemble into a `MemoryStream` and return `Results.File(bytes, contentType, fileName)`. The file
+name sets `Content-Disposition`, which is what triggers the download.
+
+**Is there an overload taking a template path and an output stream?**
+No. When the report goes to a stream, open the template as a stream too.
+
+**How do I preview the report in the browser?**
+`DocumentAssembler.GeneratePreview` renders a page to PNG with the same engine, so the preview
+matches the file exactly.
+
+**Should a broken template return 500?**
+No. A tag the data cannot satisfy is caller input — return `400`.
+
+**Will this run in a container?**
+Yes, once the image has fonts — see
+[document-generation-docker-net](https://github.com/groupdocs-assembly/document-generation-docker-net).
 
 ## Related samples
 
