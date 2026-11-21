@@ -114,6 +114,8 @@ One page as a PNG is smaller than either, and it is exactly what the reader is a
   where it broke — see
   [data-safe-templates-net](https://github.com/groupdocs-assembly/data-safe-templates-net).
 * **The licence** is applied once, in the singleton's constructor. Do not apply it per request.
+  Without one the library runs in evaluation mode and the output carries evaluation marks
+  ([temporary licence](https://purchase.groupdocs.com/temporary-license)).
 * **Fonts** on Linux: the [Dockerfile](Dockerfile) installs `fontconfig` and `fonts-liberation`,
   without which the preview is laid out with a substitute.
 
