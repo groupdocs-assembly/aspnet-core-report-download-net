@@ -1,0 +1,145 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Report service</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --panel: #ffffff;
+            --ink: #1f2328;
+            --muted: #6b7280;
+            --line: #d7dae0;
+            --accent: #1f6feb;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #16181d; --panel: #1e2127; --ink: #e6e8eb; --muted: #9aa1ab; --line: #2f343c; }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        header { padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+        header h1 { margin: 0; font-size: 16px; }
+        header p { margin: 4px 0 0; color: var(--muted); }
+
+        main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; padding: 20px; align-items: start; }
+        @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+        section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+        h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
+
+        textarea {
+            width: 100%; height: 360px; resize: vertical;
+            font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+            color: var(--ink); background: transparent;
+            border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+        }
+
+        .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+        button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+        button:hover { border-color: var(--accent); }
+        button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        #status { color: var(--muted); margin-left: auto; }
+
+        #preview { width: 100%; border: 1px solid var(--line); border-radius: 6px; display: block; }
+        .hint { color: var(--muted); margin: 10px 0 0; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Report service</h1>
+    <p>Edit the data, see the first page, download the report. One Word template, no Microsoft Office on the server.</p>
+</header>
+
+<main>
+    <section>
+        <h2>Data</h2>
+        <textarea id="data" spellcheck="false"></textarea>
+        <div class="actions">
+            <button type="button" id="render">Show first page</button>
+            <button type="button" class="primary" id="docx">Download DOCX</button>
+            <button type="button" class="primary" id="pdf">Download PDF</button>
+            <span id="status"></span>
+        </div>
+    </section>
+
+    <section>
+        <h2>First page</h2>
+        <img id="preview" alt="First page of the report" />
+        <p class="hint">Rendered by <code>DocumentAssembler.GeneratePreview</code>, which came with 26.11.</p>
+    </section>
+</main>
+
+<script>
+    const el = {
+        data: document.getElementById('data'),
+        render: document.getElementById('render'),
+        docx: document.getElementById('docx'),
+        pdf: document.getElementById('pdf'),
+        preview: document.getElementById('preview'),
+        status: document.getElementById('status'),
+    };
+
+    function status(text) { el.status.textContent = text || ''; }
+
+    async function load() {
+        const response = await fetch('/api/sample');
+        el.data.value = await response.text();
+        await render();
+    }
+
+    async function post(url) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: el.data.value,
+        });
+    }
+
+    async function render() {
+        status('Rendering...');
+        const response = await post('/api/reports/preview?page=1&dpi=120');
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            status(body.error || response.statusText);
+            return;
+        }
+        const blob = await response.blob();
+        el.preview.src = URL.createObjectURL(blob);
+        status('');
+    }
+
+    async function download(format) {
+        status('Assembling...');
+        const response = await post('/api/reports?format=' + format);
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            status(body.error || response.statusText);
+            return;
+        }
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'customer-orders.' + format;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        status('Downloaded');
+    }
+
+    el.render.addEventListener('click', render);
+    el.docx.addEventListener('click', () => download('docx'));
+    el.pdf.addEventListener('click', () => download('pdf'));
+
+    load().catch((error) => status(error.message));
+</script>
+</body>
+</html>
